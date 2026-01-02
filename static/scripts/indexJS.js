@@ -1,10 +1,32 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("consultaForm");
+  const nomeInput = document.getElementById("nome");
   const cpfInput = document.getElementById("cpf");
-  const telInput = document.getElementById("numero");
+  const telInput = document.getElementById("numero"); // ok
   const erroMsg = document.getElementById("erroMsg");
 
   if (!form) return;
+
+  /* =========================
+     🔐 VERIFICA SE JÁ AUTORIZADO
+  ========================= */
+
+  const autorizado = localStorage.getItem("consulta_autorizada");
+  if (autorizado === "true") {
+    window.location.href = "/home";
+    return;
+  }
+
+  /* =========================
+     🆔 DEVICE ID
+  ========================= */
+
+  let deviceId = localStorage.getItem("device_id");
+
+  if (!deviceId) {
+    deviceId = gerarDeviceId();
+    localStorage.setItem("device_id", deviceId);
+  }
 
   /* =========================
      MÁSCARAS
@@ -24,28 +46,50 @@ document.addEventListener("DOMContentLoaded", () => {
      SUBMIT
   ========================= */
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     limparErro();
 
-    const cpf = cpfInput.value;
-    const telefone = telInput.value;
+    const cpf = cpfInput.value.replace(/\D/g, ""); // enviar só números
+    const telefone = telInput.value.replace(/\D/g, ""); // enviar só números
 
     if (!validaCPF(cpf)) {
-      mostrarErro("CPF inválido. Verifique os números.", cpfInput);
+      mostrarErro("CPF inválido.", cpfInput);
       return;
     }
 
     if (!validaCelular(telefone)) {
-      mostrarErro("Telefone inválido. Use celular com DDD válido.", telInput);
+      mostrarErro("Telefone inválido.", telInput);
       return;
     }
 
-    // 🔒 Aqui futuramente entra o backend
-    console.log("Dados enviados:", { cpf, telefone });
+    try {
+      const response = await fetch("/api/informacoes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          cpf: cpf,
+          telefone: telefone,
+          device_id: deviceId // 🔐 NOVO
+        })
+      });
 
-    localStorage.setItem("consulta_autorizada", "true");
-    window.location.href = "/home";
+      const data = await response.json();
+
+      if (!response.ok) {
+        mostrarErro(data.erro || "Erro no servidor");
+        return;
+      }
+
+      localStorage.setItem("consulta_autorizada", "true");
+      window.location.href = "/home";
+
+    } catch (error) {
+      mostrarErro("Erro de conexão com o servidor.");
+      console.error(error);
+    }
   });
 
   /* =========================
@@ -65,6 +109,29 @@ document.addEventListener("DOMContentLoaded", () => {
     telInput.classList.remove("input-erro");
   }
 });
+
+/* =========================
+   🆔 GERAR DEVICE ID
+========================= */
+
+function gerarDeviceId() {
+  const data = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset()
+  ].join("|");
+
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = (hash << 5) - hash + data.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return "dev_" + Math.abs(hash);
+}
 
 /* =========================
    MÁSCARA CPF
@@ -96,7 +163,7 @@ function mascaraTelefone(valor) {
 }
 
 /* =========================
-   VALIDA TELEFONE (DDD + CELULAR)
+   VALIDA TELEFONE
 ========================= */
 
 function validaCelular(telefone) {
