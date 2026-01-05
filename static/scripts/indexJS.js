@@ -1,35 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("consultaForm");
-  const nomeInput = document.getElementById("nome");
   const cpfInput = document.getElementById("cpf");
-  const telInput = document.getElementById("numero"); // ok
+  const telInput = document.getElementById("numero");
   const erroMsg = document.getElementById("erroMsg");
 
   if (!form) return;
 
   /* =========================
-     🔐 VERIFICA SE JÁ AUTORIZADO
+     🔐 AUTO LOGIN
   ========================= */
 
-  const autorizado = localStorage.getItem("consulta_autorizada");
-  if (autorizado === "true") {
-    window.location.href = "/home";
-    return;
-  }
+  fetch("/api/session", { credentials: "include" })
+    .then(res => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    })
+    .then(data => {
+      window.location.href = data.admin ? "/admin" : "/home";
+    })
+    .catch(() => {});
 
   /* =========================
-     🆔 DEVICE ID
-  ========================= */
-
-  let deviceId = localStorage.getItem("device_id");
-
-  if (!deviceId) {
-    deviceId = gerarDeviceId();
-    localStorage.setItem("device_id", deviceId);
-  }
-
-  /* =========================
-     MÁSCARAS
+     🎭 MÁSCARAS (ESTAVA FALTANDO ISSO)
   ========================= */
 
   cpfInput.addEventListener("input", () => {
@@ -50,8 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     limparErro();
 
-    const cpf = cpfInput.value.replace(/\D/g, ""); // enviar só números
-    const telefone = telInput.value.replace(/\D/g, ""); // enviar só números
+    const cpf = cpfInput.value.replace(/\D/g, "");
+    const telefone = telInput.value.replace(/\D/g, "");
 
     if (!validaCPF(cpf)) {
       mostrarErro("CPF inválido.", cpfInput);
@@ -64,16 +56,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      const csrfToken = getCookie("csrf_token");
+
       const response = await fetch("/api/informacoes", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify({
-          cpf: cpf,
-          telefone: telefone,
-          device_id: deviceId // 🔐 NOVO
-        })
+        credentials: "include",
+        body: JSON.stringify({ cpf, telefone })
       });
 
       const data = await response.json();
@@ -83,12 +75,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      localStorage.setItem("consulta_autorizada", "true");
-      window.location.href = "/home";
+      window.location.href = data.admin ? "/admin" : "/home";
 
-    } catch (error) {
-      mostrarErro("Erro de conexão com o servidor.");
-      console.error(error);
+    } catch (err) {
+      mostrarErro("Erro de conexão.");
+      console.error(err);
     }
   });
 
@@ -111,26 +102,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================
-   🆔 GERAR DEVICE ID
+   🍪 COOKIE READER
 ========================= */
 
-function gerarDeviceId() {
-  const data = [
-    navigator.userAgent,
-    navigator.language,
-    screen.width,
-    screen.height,
-    screen.colorDepth,
-    new Date().getTimezoneOffset()
-  ].join("|");
-
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = (hash << 5) - hash + data.charCodeAt(i);
-    hash |= 0;
-  }
-
-  return "dev_" + Math.abs(hash);
+function getCookie(nome) {
+  const valor = `; ${document.cookie}`;
+  const partes = valor.split(`; ${nome}=`);
+  if (partes.length === 2) return partes.pop().split(";").shift();
 }
 
 /* =========================
@@ -163,7 +141,7 @@ function mascaraTelefone(valor) {
 }
 
 /* =========================
-   VALIDA TELEFONE
+   VALIDA TELEFONE (COMPLETA)
 ========================= */
 
 function validaCelular(telefone) {
@@ -196,7 +174,7 @@ function validaCelular(telefone) {
 }
 
 /* =========================
-   VALIDA CPF
+   VALIDA CPF (COMPLETA)
 ========================= */
 
 function validaCPF(cpf) {

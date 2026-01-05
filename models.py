@@ -33,6 +33,9 @@ class Informacoes(db.Model):
     cpf_hash = db.Column(db.String(64), nullable=False, unique=True)
     telefone_hash = db.Column(db.String(64), nullable=False, unique=True)
 
+    # 👑 Campo ADMIN (NOVO)
+    admin = db.Column(db.Boolean, default=False, nullable=False)
+
     # =========================
     # Métodos de criptografia
     # =========================
