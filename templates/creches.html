@@ -4,29 +4,38 @@
 <head>
   <meta charset="UTF-8">
   <title>Monitor de Metas Públicas</title>
+
+  <!-- FontAwesome -->
   <script src="https://kit.fontawesome.com/fc0a1db65c.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="../static/css/adminStyle.css">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../static/css/creches.css">
 </head>
 
 <body>
 
+  <!-- =========================
+       HEADER
+  ========================= -->
   <header class="header">
     <h1>ADIMINNNNASTROs</h1>
     <p>Acompanhamento de compromissos anunciados</p>
+
     <button class="btn-adm">
-      <i class="fas fa-user"></i>
+      <i class="fas fa-user-shield"></i>
       <span>ADM</span>
       <i class="fas fa-chevron-down"></i>
     </button>
+
     <div class="adm-menu" id="admMenu">
       <ul>
+        <li data-action="home">
+          <i class="fas fa-home"></i>
+          Início
+        </li>
         <li data-action="info">
           <i class="fas fa-circle-info"></i>
           Informações
-        </li>
-        <li data-action="creches">
-          <i class="fas fa-school"></i>
-          Creches
         </li>
         <li class="divider"></li>
         <li data-action="logout" class="sair">
@@ -35,25 +44,35 @@
         </li>
       </ul>
     </div>
-
   </header>
 
+  <!-- =========================
+       CONTEÚDO
+  ========================= -->
   <main class="container">
     <section class="card meta-card">
       <h2>Creches prometidas</h2>
 
       <div class="numeros">
+
+        <!-- ENTREGUES -->
         <div>
-          <!-- ENTREGUES (vem do BD via JS) -->
-          <span id="entregues" class="entregues"></span>
+          <span class="entregues">
+            <span id="entregues"></span>
+            <i class="fas fa-pen edit-icon" data-campo="entregues"></i>
+          </span>
           <small>Entregues</small>
         </div>
 
+        <!-- PROMETIDAS -->
         <div>
-          <!-- PROMETIDAS (vem do BD via JS) -->
-          <span id="prometidas"></span>
+          <span>
+            <span id="prometidas"></span>
+            <i class="fas fa-pen edit-icon" data-campo="prometidas"></i>
+          </span>
           <small>Prometidas</small>
         </div>
+
       </div>
 
       <div class="barra">
@@ -61,7 +80,6 @@
       </div>
 
       <p class="percentual">
-        <!-- PORCENTAGEM calculada no JS -->
         <span id="percentual"></span> concluído
       </p>
 
@@ -71,7 +89,39 @@
     </section>
   </main>
 
-  <script src="../static/scripts/adminJS.js"></script>
-</body>
+  <!-- =========================
+       OVERLAY EDITAR CRECHES
+  ========================= -->
+  <div class="overlay hidden" id="overlayEditar">
+    <div class="overlay-card">
+      <h2>Editar valor</h2>
+      <p id="labelCampo"></p>
 
+      <input
+        type="text"
+        id="inputValor"
+        maxlength="6"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        placeholder="Somente números"
+      />
+
+      <span class="erro" id="erroEditar"></span>
+
+      <button id="salvarValor">Salvar</button>
+      <button
+        id="cancelarValor"
+        style="margin-top:8px;background:#1e293b"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================
+       SCRIPT
+  ========================= -->
+  <script src="../static/scripts/crechesJS.js"></script>
+
+</body>
 </html>

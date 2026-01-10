@@ -399,6 +399,44 @@ def atualizar_admin(user_id):
         "admin": usuario.admin
     }), 200
 
+@app.route("/api/creches", methods=["PATCH"])
+def atualizar_creches():
+    if request.cookies.get("auth") != "1":
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    if request.cookies.get("admin") != "1":
+        return jsonify({"erro": "Acesso negado"}), 403
+
+    if not validar_csrf():
+        return jsonify({"erro": "CSRF inválido"}), 403
+
+    data = request.get_json()
+    campo = data.get("campo")
+    valor = data.get("valor")
+
+    if campo not in ["entregues", "prometidas"]:
+        return jsonify({"erro": "Campo inválido"}), 400
+
+    if not isinstance(valor, int):
+        return jsonify({"erro": "Valor inválido"}), 400
+
+    if valor < 0 or len(str(valor)) > 6:
+        return jsonify({"erro": "Valor fora do limite"}), 400
+
+    creche = Creche.query.first()
+    if not creche:
+        return jsonify({"erro": "Registro não encontrado"}), 404
+
+    if campo == "entregues":
+        creche.total_existentes = valor
+    else:
+        creche.total_prometidas = valor
+
+    db.session.commit()
+
+    return jsonify({"sucesso": True}), 200
+
+
 # =========================
 # INIT DB
 # =========================
